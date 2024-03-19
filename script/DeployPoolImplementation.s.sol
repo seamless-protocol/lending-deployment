@@ -2,13 +2,12 @@
 pragma solidity ^0.8.10;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Pool} from "aave-v3-core/contracts/protocol/pool/Pool.sol";
+import {Pool} from "seamless/aave-v3-core/protocol/pool/Pool.sol";
 import {Constants} from "./Constants.sol";
 
 contract DeployPoolImplementation is Script {
-
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
 
         console.log("Deployer address: ", deployerAddress);

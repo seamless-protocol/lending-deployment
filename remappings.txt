@@ -1,0 +1,2 @@
+forge-std/=lib/forge-std/src/
+seamless/aave-v3-core/=lib/seamless-aave-v3-core/contracts
