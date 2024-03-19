@@ -20,6 +20,8 @@ contract DeployPoolImplementation is Script {
         Pool poolImplementation = new Pool(Constants.POOL_ADDRESSES_PROVIDER);
         poolImplementation.initialize(Constants.POOL_ADDRESSES_PROVIDER);
 
+        console.log("Pool implementation deployed: ", address(poolImplementation));
+
         vm.stopBroadcast();
     }
 }

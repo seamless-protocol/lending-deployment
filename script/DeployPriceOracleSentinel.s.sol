@@ -21,7 +21,7 @@ contract DeployPriceOracleSentinel is Script {
             Constants.POOL_ADDRESSES_PROVIDER, Constants.SEQUENCER_ORACLE, Constants.SEQUENCER_ORACLE_GRACE_PERIOD
         );
 
-        console.log("priceOracleSentinel deployed: ", address(priceOracleSentinel));
+        console.log("PriceOracleSentinel deployed: ", address(priceOracleSentinel));
 
         vm.stopBroadcast();
     }
