@@ -1,0 +1,43 @@
+name: CI
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "main"
+
+env:
+  FOUNDRY_PROFILE: ci
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly-d369d2486f85576eec4ca41d277391dfdae21ba7
+      
+      - name: Run Forge Format
+        run: |
+          forge fmt --check
+        id: format
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge Tests
+        env: 
+          FORK_URL: ${{ secrets.FORK_URL }}
+        run: |
+          forge test -vvv --gas-report
+        id: test
