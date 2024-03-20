@@ -2,10 +2,10 @@
 pragma solidity ^0.8.10;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Pool} from "seamless/aave-v3-core/protocol/pool/Pool.sol";
+import {PriceOracleSentinel} from "seamless/aave-v3-core/protocol/configuration/PriceOracleSentinel.sol";
 import {Constants} from "./Constants.sol";
 
-contract DeployPoolImplementation is Script {
+contract DeployPriceOracleSentinel is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
@@ -17,10 +17,11 @@ contract DeployPoolImplementation is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        Pool poolImplementation = new Pool(Constants.POOL_ADDRESSES_PROVIDER);
-        poolImplementation.initialize(Constants.POOL_ADDRESSES_PROVIDER);
+        PriceOracleSentinel priceOracleSentinel = new PriceOracleSentinel(
+            Constants.POOL_ADDRESSES_PROVIDER, Constants.SEQUENCER_ORACLE, Constants.SEQUENCER_ORACLE_GRACE_PERIOD
+        );
 
-        console.log("Pool implementation deployed: ", address(poolImplementation));
+        console.log("PriceOracleSentinel deployed: ", address(priceOracleSentinel));
 
         vm.stopBroadcast();
     }
