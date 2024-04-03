@@ -42,7 +42,7 @@ contract DeployConfigEngine is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         TransparentProxyFactory transparentProxyFactory = new TransparentProxyFactory();
-        ProxyAdmin proxyAdmin = ProxyAdmin(transparentProxyFactory.createProxyAdmin(deployerAddress));
+        ProxyAdmin proxyAdmin = ProxyAdmin(transparentProxyFactory.createProxyAdmin(Constants.GUARDIAN));
 
         (address ratesStrategyFactory,) = _createAndSetupRatesFactory(
             IPoolAddressesProvider(address(Constants.POOL_ADDRESSES_PROVIDER)),

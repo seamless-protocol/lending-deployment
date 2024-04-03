@@ -16,7 +16,7 @@ library Constants {
     address constant REWARDS_CONTROLLER = 0x91Ac2FfF8CBeF5859eAA6DdA661feBd533cD3780;
     address constant COLLECTOR = 0x982F3A0e3183896f9970b8A9Ea6B69Cd53AF1089;
 
-    IAaveV3ConfigEngine constant CONFIG_ENGINE = IAaveV3ConfigEngine(address(0)); // TODO
+    IAaveV3ConfigEngine constant CONFIG_ENGINE = IAaveV3ConfigEngine(0xD982669abE883B8bE5f229faAF5153f968B879a0);
 
     address constant GUARDIAN = 0xA1b5f2cc9B407177CD8a4ACF1699fa0b99955A22;
 
