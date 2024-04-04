@@ -11,7 +11,4 @@ via_ir = false
 base = "${BASE_RPC}"
 tenderly = "${TENDERLY_FORK_RPC_URL}"
 
-[etherscan]
-tenderly = { key = "${TENDERLY_ACCESS_KEY}", chain = "1337", url = "${TENDERLY_VERIFY_URL}" } # this is bugged in Foundry but hopefully will work on newer version of Foundry
-
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
