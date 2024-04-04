@@ -22,7 +22,7 @@ deploy-price-oracle-sentinel-base-mainnet		:; forge script script/DeployPriceOra
 deploy-price-oracle-sentinel-tenderly			:; forge script script/DeployPriceOracleSentinel.s.sol:DeployPriceOracleSentinel --force --rpc-url tenderly --slow --broadcast -vvv
 
 deploy-config-engine-base-mainnet		:; forge script script/DeployConfigEngine.s.sol:DeployConfigEngine --force --rpc-url base --chain base --slow --broadcast --verify --delay 5 -vvv
-deploy-config-engine-tenderly			:; forge script script/DeployConfigEngine.s.sol:DeployConfigEngine --force --rpc-url tenderly --slow --broadcast -vvv
+deploy-config-engine-tenderly			:; forge script script/DeployConfigEngine.s.sol:DeployConfigEngine --force --rpc-url tenderly --etherscan-api-key ${TENDERLY_ACCESS_KEY} --verifier-url ${TENDERLY_VERIFY_URL} --slow --broadcast --verify --delay 5 -vvv
 
 deploy-risk-steward-base-mainnet		:; forge script script/DeployRiskSteward.s.sol:DeployRiskSteward --force --rpc-url base --chain base --slow --broadcast --verify --delay 5 -vvv
-deploy-risk-steward-tenderly			:; forge script script/DeployRiskSteward.s.sol:DeployRiskSteward --force --rpc-url tenderly --slow --broadcast -vvv
+deploy-risk-steward-tenderly			:; forge script script/DeployRiskSteward.s.sol:DeployRiskSteward --force --rpc-url tenderly --etherscan-api-key ${TENDERLY_ACCESS_KEY} --verifier-url ${TENDERLY_VERIFY_URL} --slow --broadcast --verify --delay 5 -vvv
