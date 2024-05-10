@@ -26,7 +26,7 @@ contract RewardsControllerTest is Test {
     address[] rewardsList;
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("BASE_RPC"), 14261704);
+        vm.createSelectFork(vm.envString("FORK_URL"), 14261704);
 
         rewardsProxy = RewardsController(Constants.POOL_ADDRESSES_PROVIDER.getAddress(REWARDS_PROXY_ADDRESS_ID));
 
