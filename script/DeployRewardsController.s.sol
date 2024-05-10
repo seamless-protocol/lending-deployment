@@ -5,7 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {RewardsController} from "seamless/aave-v3-periphery/rewards/RewardsController.sol";
 import {Constants} from "./Constants.sol";
 
-contract DeployPoolImplementation is Script {
+contract DeployRewardsController is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
