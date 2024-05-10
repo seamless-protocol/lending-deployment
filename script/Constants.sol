@@ -26,7 +26,8 @@ library Constants {
 
     address constant EMISSION_MANAGER = 0x6e081F9ebb2B2f07C2f771074EBB32dDac141d14;
 
-    IUiIncentiveDataProviderV3 constant UI_INCENTIVE_PROVIDER_V3 = IUiIncentiveDataProviderV3(0x3F5a90eF7BC3eE64e1E95b850DbBC2469fF71ce8);
+    IUiIncentiveDataProviderV3 constant UI_INCENTIVE_PROVIDER_V3 =
+        IUiIncentiveDataProviderV3(0x3F5a90eF7BC3eE64e1E95b850DbBC2469fF71ce8);
 
     address constant TIMELOCK_SHORT = 0x639d2dD24304aC2e6A691d8c1cFf4a2665925fee;
 }
