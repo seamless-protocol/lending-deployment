@@ -78,14 +78,15 @@ contract RewardsControllerTest is Test {
                 assertEq(lastUpdateTimestamp, block.timestamp);
                 assertNotEq(index, 0);
 
+                uint256 scaleDiff = (10 ** (27 - IERC20(asset).decimals()));
+
                 if (lastUpdateTimestamp >= distributionEnd) {
-                    // check that non-active reward programs are unchanged
-                    assertEq(index, prevOldIndexes[i][j]);
+                    // check that non-active reward programs
+                    assertEq(index, prevOldIndexes[i][j] * scaleDiff);
                 } else {
-                    // check that active reward programs have new indexes are scaled up to 1e27
-                    uint256 scaleDiff = (10 ** (27 - IERC20(asset).decimals()));
+                    // check that active reward programs
                     assertEq(
-                        (index - prevOldIndexes[i][j]) / scaleDiff * scaleDiff,
+                        (index - (prevOldIndexes[i][j] * scaleDiff)) / scaleDiff * scaleDiff,
                         (prevNewIndexes[i][j] - prevOldIndexes[i][j]) * scaleDiff
                     );
                 }
@@ -148,6 +149,66 @@ contract RewardsControllerTest is Test {
         uint256 expectedUserRewards = ((emissionPerSecond * 1e27 / totalSupply) + assetIndexBefore) * userBalance / 1e27;
 
         assertEq(userRewards, expectedUserRewards);
+    }
+
+    function test_FuzzUserIndexLong(uint256 amount, uint32 duration) public {
+        vm.assume(amount > 0 && amount < 1e27);
+        vm.assume(duration > 0 && duration < (60 * 60 * 24 * 10)); // 10 day max
+
+        deal(USDC, user, amount);
+
+        IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
+        IPoolConfigurator poolConfigurator = IPoolConfigurator(Constants.POOL_ADDRESSES_PROVIDER.getPoolConfigurator());
+
+        // remove supply cap
+        vm.prank(Constants.TIMELOCK_SHORT);
+        poolConfigurator.setSupplyCap(USDC, 0);
+
+        vm.startPrank(user);
+        IERC20(USDC).approve(address(pool), amount);
+
+        // Split up deposits to force multiple handleAction calls
+        if (amount > 1) {
+            pool.supply(USDC, amount / 2, user, 0);
+            pool.supply(USDC, amount / 2, user, 0);
+        }
+        if (amount % 2 != 0) {
+            pool.supply(USDC, 1, user, 0);
+        }
+        vm.stopPrank();
+
+        DataTypes.ReserveData memory usdcReserve = pool.getReserveData(USDC);
+        address usdcAToken = usdcReserve.aTokenAddress;
+
+        (, uint256 assetIndexBefore) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
+        vm.warp(vm.getBlockTimestamp() + duration / 2);
+        (, uint256 assetIndexAfter) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
+
+        address[] memory usdcAddressArray = new address[](1);
+        usdcAddressArray[0] = usdcAToken;
+        uint256 userRewardsBefore = rewardsProxy.getUserRewards(usdcAddressArray, user, USDC);
+
+        _upgrade();
+
+        vm.warp(vm.getBlockTimestamp() + duration / 2);
+
+        (, assetIndexAfter) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
+
+        // check index is updated
+        assertNotEq(assetIndexAfter, assetIndexBefore);
+
+        uint256 userRewards = rewardsProxy.getUserRewards(usdcAddressArray, user, USDC);
+
+        (, uint256 emissionPerSecond,,) = rewardsProxy.getRewardsData(usdcAToken, USDC);
+
+        (uint256 userBalance, uint256 totalSupply) = IScaledBalanceToken(usdcAToken).getScaledUserBalanceAndSupply(user);
+
+        uint256 expectedUserRewards = (((emissionPerSecond * 1e27 * duration) / totalSupply) + assetIndexBefore);
+        expectedUserRewards *= userBalance / 1e27; // separated to prevent stack too deep
+
+        console.log("expectedUserRewards %s, userRewardsBefore %s", expectedUserRewards, userRewardsBefore);
+
+        assertEq(userRewards, expectedUserRewards + userRewardsBefore);
     }
 
     function _upgrade() internal {
