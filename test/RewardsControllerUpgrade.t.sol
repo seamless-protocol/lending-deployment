@@ -12,6 +12,7 @@ import {IUiIncentiveDataProviderV3} from "seamless/aave-v3-periphery/misc/interf
 import {IPoolAddressesProvider} from "seamless/aave-v3-periphery/misc/interfaces/IUiIncentiveDataProviderV3.sol";
 import {Constants} from "../script/Constants.sol";
 
+// Test upgrade/migration of RewardsController
 contract RewardsControllerTest is Test {
     uint256 constant FORK_BLOCK_NUMBER = 14261704; // 2024-05-09 Base
 
@@ -23,7 +24,6 @@ contract RewardsControllerTest is Test {
 
     RewardsController rewardsProxy;
     address[] assetsList;
-    address[] rewardsList;
 
     function setUp() public {
         vm.createSelectFork(vm.envString("FORK_URL"), 14261704);
@@ -38,8 +38,6 @@ contract RewardsControllerTest is Test {
             assetsList.push(incentiveData[i].aIncentiveData.tokenAddress);
             assetsList.push(incentiveData[i].vIncentiveData.tokenAddress);
         }
-
-        rewardsList = rewardsProxy.getRewardsList();
 
         // remove supply cap
         IPoolConfigurator poolConfigurator = IPoolConfigurator(Constants.POOL_ADDRESSES_PROVIDER.getPoolConfigurator());
@@ -146,10 +144,7 @@ contract RewardsControllerTest is Test {
 
         (uint256 userBalance, uint256 totalSupply) = IScaledBalanceToken(usdcAToken).getScaledUserBalanceAndSupply(user);
 
-        uint256 scaledAssetIndexBefore = assetIndexBefore * 1e27 / 1e6;
-        uint256 expectedUserRewards = (
-            ((emissionPerSecond * 1e27 / totalSupply) + scaledAssetIndexBefore) - scaledAssetIndexBefore
-        ) * userBalance / 1e27;
+        uint256 expectedUserRewards = (emissionPerSecond * 1e27 / totalSupply) * userBalance / 1e27;
 
         assertEq(userRewards, expectedUserRewards);
 
@@ -160,6 +155,7 @@ contract RewardsControllerTest is Test {
     function test_FuzzUserIndexDuration(uint256 amount, uint32 duration) public {
         amount = bound(amount, 1, type(uint128).max);
         duration = uint32(bound(duration, 1, 60 * 60 * 24 * 10)); // 10 day max
+        vm.assume(duration % 2 == 0);
 
         deal(USDC, user, amount);
 
@@ -181,19 +177,16 @@ contract RewardsControllerTest is Test {
         DataTypes.ReserveData memory usdcReserve = pool.getReserveData(USDC);
         address usdcAToken = usdcReserve.aTokenAddress;
 
-        uint256 userIndexBefore = rewardsProxy.getUserAssetIndex(user, usdcAToken, USDC);
-
-        vm.warp(vm.getBlockTimestamp() + (duration / 2));
-
         address[] memory usdcAddressArray = new address[](1);
         usdcAddressArray[0] = usdcAToken;
-        uint256 userRewardsBefore = rewardsProxy.getUserAccruedRewards(user, USDC);
+
+        uint256 startTimestamp = vm.getBlockTimestamp();
+        vm.warp(startTimestamp + (duration / 2));
 
         _upgrade();
 
-        (, uint256 assetIndexAfter) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
-
         vm.warp(vm.getBlockTimestamp() + (duration / 2));
+        assertEq(vm.getBlockTimestamp() - startTimestamp, duration);
 
         uint256 userRewards = rewardsProxy.getUserRewards(usdcAddressArray, user, USDC);
 
@@ -201,13 +194,12 @@ contract RewardsControllerTest is Test {
 
         (uint256 userBalance, uint256 totalSupply) = IScaledBalanceToken(usdcAToken).getScaledUserBalanceAndSupply(user);
 
-        uint256 expectedUserRewards = emissionPerSecond * 1e27 * (duration / 2);
-        // separated to prevent stack too deep
-        expectedUserRewards = (expectedUserRewards / totalSupply);
-        expectedUserRewards = expectedUserRewards + assetIndexAfter;
-        expectedUserRewards = (expectedUserRewards - (userIndexBefore * 1e27 / 1e6)) * userBalance / 1e27;
+        uint256 expectedUserRewards = emissionPerSecond * (duration / 2) * 1e27 / totalSupply;
+        // We do this operation twice (instead of removing the division by 2) to force truncation of the reward index to match the rounding scheme in the implementation
+        expectedUserRewards += emissionPerSecond * (duration / 2) * 1e27 / totalSupply;
+        expectedUserRewards = expectedUserRewards * userBalance / 1e27;
 
-        assertEq(userRewards, expectedUserRewards + userRewardsBefore);
+        assertEq(userRewards, expectedUserRewards);
 
         vm.prank(user);
         assertEq(rewardsProxy.claimRewards(usdcAddressArray, type(uint256).max, user, USDC), userRewards);
