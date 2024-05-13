@@ -40,6 +40,11 @@ contract RewardsControllerTest is Test {
         }
 
         rewardsList = rewardsProxy.getRewardsList();
+
+        // remove supply cap
+        IPoolConfigurator poolConfigurator = IPoolConfigurator(Constants.POOL_ADDRESSES_PROVIDER.getPoolConfigurator());
+        vm.prank(Constants.TIMELOCK_SHORT);
+        poolConfigurator.setSupplyCap(USDC, 0);
     }
 
     function test_Upgrade() public {
@@ -95,16 +100,11 @@ contract RewardsControllerTest is Test {
     }
 
     function test_FuzzUserIndex(uint256 amount) public {
-        vm.assume(amount > 0 && amount < 1e27);
+        amount = bound(amount, 1, type(uint128).max);
 
         deal(USDC, user, amount);
 
         IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
-        IPoolConfigurator poolConfigurator = IPoolConfigurator(Constants.POOL_ADDRESSES_PROVIDER.getPoolConfigurator());
-
-        // remove supply cap
-        vm.prank(Constants.TIMELOCK_SHORT);
-        poolConfigurator.setSupplyCap(USDC, 0);
 
         vm.startPrank(user);
         IERC20(USDC).approve(address(pool), amount);
@@ -152,20 +152,18 @@ contract RewardsControllerTest is Test {
         ) * userBalance / 1e27;
 
         assertEq(userRewards, expectedUserRewards);
+
+        vm.prank(user);
+        assertEq(rewardsProxy.claimRewards(usdcAddressArray, type(uint256).max, user, USDC), userRewards);
     }
 
-    function test_FuzzUserIndexLong(uint256 amount, uint32 duration) public {
-        vm.assume(amount > 0 && amount < 1e27);
-        vm.assume(duration > 0 && duration < (60 * 60 * 24 * 10)); // 10 day max
+    function test_FuzzUserIndexDuration(uint256 amount, uint32 duration) public {
+        amount = bound(amount, 1, type(uint128).max);
+        duration = uint32(bound(duration, 1, 60 * 60 * 24 * 10)); // 10 day max
 
         deal(USDC, user, amount);
 
         IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
-        IPoolConfigurator poolConfigurator = IPoolConfigurator(Constants.POOL_ADDRESSES_PROVIDER.getPoolConfigurator());
-
-        // remove supply cap
-        vm.prank(Constants.TIMELOCK_SHORT);
-        poolConfigurator.setSupplyCap(USDC, 0);
 
         vm.startPrank(user);
         IERC20(USDC).approve(address(pool), amount);
@@ -210,6 +208,9 @@ contract RewardsControllerTest is Test {
         expectedUserRewards = (expectedUserRewards - (userIndexBefore * 1e27 / 1e6)) * userBalance / 1e27;
 
         assertEq(userRewards, expectedUserRewards + userRewardsBefore);
+
+        vm.prank(user);
+        assertEq(rewardsProxy.claimRewards(usdcAddressArray, type(uint256).max, user, USDC), userRewards);
     }
 
     function _upgrade() internal {
