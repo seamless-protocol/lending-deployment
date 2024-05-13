@@ -146,7 +146,10 @@ contract RewardsControllerTest is Test {
 
         (uint256 userBalance, uint256 totalSupply) = IScaledBalanceToken(usdcAToken).getScaledUserBalanceAndSupply(user);
 
-        uint256 expectedUserRewards = ((emissionPerSecond * 1e27 / totalSupply) + assetIndexBefore) * userBalance / 1e27;
+        uint256 scaledAssetIndexBefore = assetIndexBefore * 1e27 / 1e6;
+        uint256 expectedUserRewards = (
+            ((emissionPerSecond * 1e27 / totalSupply) + scaledAssetIndexBefore) - scaledAssetIndexBefore
+        ) * userBalance / 1e27;
 
         assertEq(userRewards, expectedUserRewards);
     }
@@ -180,22 +183,19 @@ contract RewardsControllerTest is Test {
         DataTypes.ReserveData memory usdcReserve = pool.getReserveData(USDC);
         address usdcAToken = usdcReserve.aTokenAddress;
 
-        (, uint256 assetIndexBefore) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
-        vm.warp(vm.getBlockTimestamp() + duration / 2);
-        (, uint256 assetIndexAfter) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
+        uint256 userIndexBefore = rewardsProxy.getUserAssetIndex(user, usdcAToken, USDC);
+
+        vm.warp(vm.getBlockTimestamp() + (duration / 2));
 
         address[] memory usdcAddressArray = new address[](1);
         usdcAddressArray[0] = usdcAToken;
-        uint256 userRewardsBefore = rewardsProxy.getUserRewards(usdcAddressArray, user, USDC);
+        uint256 userRewardsBefore = rewardsProxy.getUserAccruedRewards(user, USDC);
 
         _upgrade();
 
-        vm.warp(vm.getBlockTimestamp() + duration / 2);
+        (, uint256 assetIndexAfter) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
 
-        (, assetIndexAfter) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
-
-        // check index is updated
-        assertNotEq(assetIndexAfter, assetIndexBefore);
+        vm.warp(vm.getBlockTimestamp() + (duration / 2));
 
         uint256 userRewards = rewardsProxy.getUserRewards(usdcAddressArray, user, USDC);
 
@@ -203,10 +203,11 @@ contract RewardsControllerTest is Test {
 
         (uint256 userBalance, uint256 totalSupply) = IScaledBalanceToken(usdcAToken).getScaledUserBalanceAndSupply(user);
 
-        uint256 expectedUserRewards = (((emissionPerSecond * 1e27 * duration) / totalSupply) + assetIndexBefore);
-        expectedUserRewards *= userBalance / 1e27; // separated to prevent stack too deep
-
-        console.log("expectedUserRewards %s, userRewardsBefore %s", expectedUserRewards, userRewardsBefore);
+        uint256 expectedUserRewards = emissionPerSecond * 1e27 * (duration / 2);
+        // separated to prevent stack too deep
+        expectedUserRewards = (expectedUserRewards / totalSupply);
+        expectedUserRewards = expectedUserRewards + assetIndexAfter;
+        expectedUserRewards = (expectedUserRewards - (userIndexBefore * 1e27 / 1e6)) * userBalance / 1e27;
 
         assertEq(userRewards, expectedUserRewards + userRewardsBefore);
     }
