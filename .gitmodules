@@ -4,3 +4,6 @@
 [submodule "lib/seamless-aave-helpers"]
 	path = lib/seamless-aave-helpers
 	url = https://github.com/seamless-protocol/aave-helpers
+[submodule "lib/seamless-aave-v3-periphery"]
+	path = lib/seamless-aave-v3-periphery
+	url = https://github.com/seamless-protocol/aave-v3-periphery
