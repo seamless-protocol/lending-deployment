@@ -89,8 +89,8 @@ contract RewardsControllerTest is Test {
                 } else {
                     // check that active reward programs
                     assertEq(
-                        (index - (prevOldIndexes[i][j] * scaleDiff)) / scaleDiff * scaleDiff,
-                        (prevNewIndexes[i][j] - prevOldIndexes[i][j]) * scaleDiff
+                        (index - (prevOldIndexes[i][j] * scaleDiff)) / scaleDiff,
+                        (prevNewIndexes[i][j] - prevOldIndexes[i][j])
                     );
                 }
             }
