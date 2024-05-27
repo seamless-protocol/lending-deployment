@@ -13,6 +13,7 @@ import {IPoolAddressesProvider} from "seamless/aave-v3-periphery/misc/interfaces
 import {Constants} from "../script/Constants.sol";
 
 // Test upgrade/migration of RewardsController
+// These tests are now skipped since they are for an older version of the reward contract that has already been deployed and migrated
 contract RewardsControllerTest is Test {
     uint256 constant FORK_BLOCK_NUMBER = 14261704; // 2024-05-09 Base
 
@@ -46,6 +47,7 @@ contract RewardsControllerTest is Test {
     }
 
     function test_Upgrade() public {
+        vm.skip(true);
         assertEq(rewardsProxy.REVISION(), 1);
 
         _upgrade();
@@ -54,6 +56,7 @@ contract RewardsControllerTest is Test {
     }
 
     function test_MigrateV1ToV2() public {
+        vm.skip(true);
         uint256[8][20] memory prevNewIndexes;
         uint256[8][20] memory prevOldIndexes;
 
@@ -98,6 +101,7 @@ contract RewardsControllerTest is Test {
     }
 
     function test_FuzzUserIndex(uint256 amount) public {
+        vm.skip(true);
         amount = bound(amount, 1, type(uint128).max);
 
         deal(USDC, user, amount);
@@ -153,6 +157,7 @@ contract RewardsControllerTest is Test {
     }
 
     function test_FuzzUserIndexDuration(uint256 amount, uint32 duration) public {
+        vm.skip(true);
         amount = bound(amount, 1, type(uint128).max);
         duration = uint32(bound(duration, 1, 60 * 60 * 24 * 10)); // 10 day max
         vm.assume(duration % 2 == 0);
