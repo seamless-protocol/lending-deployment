@@ -20,10 +20,11 @@ contract RewardsControllerTest is Test {
 
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant DAI = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
-    address constant SEAM = 0x1C7a460413dD4e964f96D8dFC56E7223cE88CD85;
+    // address constant SEAM = 0x1C7a460413dD4e964f96D8dFC56E7223cE88CD85;
+    address constant SEAM = 0x5607718c64334eb5174CB2226af891a6ED82c7C6;
     address constant esSEAM = 0x998e44232BEF4F8B033e5A5175BDC97F2B10d5e5;
 
-    address public immutable user = makeAddr("user");
+    address public user = makeAddr("user");
 
     RewardsController rewardsProxy;
     address[] assetsList;
@@ -48,14 +49,18 @@ contract RewardsControllerTest is Test {
     }
 
     function test_RewardEnded() public {
+        user = 0x99e5d4a7Fb7BA7281D1F4fc5DCE311F1d832796C;
         uint256 amount = 1000 ether;
 
         deal(DAI, user, amount + 1);
 
         IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
 
+
         vm.startPrank(user);
         IERC20(DAI).approve(address(pool), amount + 1);
+
+        uint256 snapshot = vm.snapshot();
 
         pool.supply(DAI, amount, user, 0);
         vm.stopPrank();
@@ -65,15 +70,14 @@ contract RewardsControllerTest is Test {
         vm.warp(vm.getBlockTimestamp() + 1 days);
 
         uint256 userIndex = rewardsProxy.getUserAssetIndex(user, daiReserve.aTokenAddress, SEAM);
-        assertNotEq(userIndex, 0);
+        assertEq(userIndex, 0);
 
-        uint256 snapshot = vm.snapshot();
 
         vm.prank(user);
         pool.supply(DAI, 1, user, 0);
 
         userIndex = rewardsProxy.getUserAssetIndex(user, daiReserve.aTokenAddress, SEAM);
-        assertEq(userIndex, 0);
+        assertNotEq(userIndex, 0);
 
         vm.revertTo(snapshot);
 
