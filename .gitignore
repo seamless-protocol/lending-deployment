@@ -20,3 +20,6 @@ report/
 
 # packages
 node_modules/
+
+test/users.json
+test/output.csv
