@@ -20,8 +20,7 @@ contract RewardsControllerTest is Test {
 
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant DAI = 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb;
-    // address constant SEAM = 0x1C7a460413dD4e964f96D8dFC56E7223cE88CD85;
-    address constant SEAM = 0x5607718c64334eb5174CB2226af891a6ED82c7C6;
+    address constant SEAM = 0x1C7a460413dD4e964f96D8dFC56E7223cE88CD85;
     address constant esSEAM = 0x998e44232BEF4F8B033e5A5175BDC97F2B10d5e5;
 
     address public user = makeAddr("user");
@@ -56,7 +55,6 @@ contract RewardsControllerTest is Test {
 
         IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
 
-
         vm.startPrank(user);
         IERC20(DAI).approve(address(pool), amount + 1);
 
@@ -71,7 +69,6 @@ contract RewardsControllerTest is Test {
 
         uint256 userIndex = rewardsProxy.getUserAssetIndex(user, daiReserve.aTokenAddress, SEAM);
         assertEq(userIndex, 0);
-
 
         vm.prank(user);
         pool.supply(DAI, 1, user, 0);
@@ -89,6 +86,168 @@ contract RewardsControllerTest is Test {
         userIndex = rewardsProxy.getUserAssetIndex(user, daiReserve.aTokenAddress, SEAM);
         assertNotEq(userIndex, 0);
     }
+
+    function test_RewardEnded_ActionInTheSameBlock() public {
+        user = 0x99e5d4a7Fb7BA7281D1F4fc5DCE311F1d832796C;
+        uint256 amount = 1000 ether;
+
+        deal(DAI, user, amount + 1);
+
+        IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
+
+        vm.startPrank(user);
+        IERC20(DAI).approve(address(pool), amount + 1);
+
+        uint256 snapshot = vm.snapshot();
+
+        uint256 accruedRewardsBefore = rewardsProxy.getUserAccruedRewards(user, DAI);
+
+        pool.supply(DAI, amount, user, 0);
+
+        uint256 userIndex = rewardsProxy.getUserAssetIndex(user, pool.getReserveData(DAI).aTokenAddress, SEAM);
+        assertEq(userIndex, 0);
+
+        pool.supply(DAI, 1, user, 0);
+        vm.stopPrank();
+
+        uint256 accruedRewardsAfter = rewardsProxy.getUserAccruedRewards(user, DAI);
+        assertEq(accruedRewardsAfter, accruedRewardsBefore);
+
+        userIndex = rewardsProxy.getUserAssetIndex(user, pool.getReserveData(DAI).aTokenAddress, SEAM);
+        assertNotEq(userIndex, 0);
+
+        vm.revertTo(snapshot);
+        _upgrade();
+
+        accruedRewardsBefore = rewardsProxy.getUserAccruedRewards(user, DAI);
+
+        vm.startPrank(user);
+        pool.supply(DAI, amount, user, 0);
+
+        userIndex = rewardsProxy.getUserAssetIndex(user, pool.getReserveData(DAI).aTokenAddress, SEAM);
+        assertNotEq(userIndex, 0);
+
+        pool.supply(DAI, 1, user, 0);
+        vm.stopPrank();
+
+        accruedRewardsAfter = rewardsProxy.getUserAccruedRewards(user, DAI);
+        assertEq(accruedRewardsAfter, accruedRewardsBefore);
+
+        uint256 finalUserIndex = rewardsProxy.getUserAssetIndex(user, pool.getReserveData(DAI).aTokenAddress, SEAM);
+        assertNotEq(finalUserIndex, 0);
+        assertEq(finalUserIndex, userIndex);
+    }
+
+    // This test proves that if reward program starts before we update user index and accrued rewards user will earn everything once again
+    function test_RewardEnded_RewardStartAgain() public {
+        user = 0x99e5d4a7Fb7BA7281D1F4fc5DCE311F1d832796C;
+        uint256 amount = 1000 ether;
+
+        deal(DAI, user, amount + 1);
+
+        IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
+
+        vm.startPrank(user);
+        IERC20(DAI).approve(address(pool), amount + 1);
+
+        pool.supply(DAI, amount, user, 0);
+
+        uint256 userIndex = rewardsProxy.getUserAssetIndex(user, pool.getReserveData(DAI).aTokenAddress, SEAM);
+        assertEq(userIndex, 0);
+
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+
+        address[] memory rewards = new address[](1);
+        rewards[0] = SEAM;
+
+        uint88[] memory newEmissionsPerSecond = new uint88[](1);
+        newEmissionsPerSecond[0] = 1;
+
+        address aDAI = pool.getReserveData(DAI).aTokenAddress;
+
+        vm.startPrank(rewardsProxy.EMISSION_MANAGER());
+        rewardsProxy.setEmissionPerSecond(aDAI, rewards, newEmissionsPerSecond);
+        rewardsProxy.setDistributionEnd(aDAI, SEAM, type(uint32).max);
+        vm.stopPrank();
+
+        uint256 userAccruedRewardsBefore = rewardsProxy.getUserAccruedRewards(user, SEAM);
+
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+
+        uint256 snapshot = vm.snapshot();
+
+        vm.startPrank(user);
+        pool.supply(DAI, 1, user, 0);
+        vm.stopPrank();
+
+        userIndex = rewardsProxy.getUserAssetIndex(user, aDAI, SEAM);
+        assertNotEq(userIndex, 0);
+
+        uint256 userAccruedRewardsAfter = rewardsProxy.getUserAccruedRewards(user, SEAM);
+        uint256 totalEmittedRewards = newEmissionsPerSecond[0] * 1 days;
+        assertGt(userAccruedRewardsAfter - userAccruedRewardsBefore, totalEmittedRewards);
+
+        vm.revertTo(snapshot);
+        _upgrade();
+
+        vm.startPrank(user);
+        pool.supply(DAI, 1, user, 0);
+        vm.stopPrank();
+
+        uint256 userAccruedRewardsAfterUpgrade = rewardsProxy.getUserAccruedRewards(user, SEAM);
+        assertEq(userAccruedRewardsAfterUpgrade, userAccruedRewardsAfter);
+    }
+
+    // This test proves that if we upgrade contract and then reward program starts everything will be fine
+    function test_RewardEnded_RewardStartAgain_UpgradeBeforeRewardStart() public {
+        _upgrade();
+
+        user = 0x99e5d4a7Fb7BA7281D1F4fc5DCE311F1d832796C;
+        uint256 amount = 1000 ether;
+
+        deal(DAI, user, amount + 1);
+
+        IPool pool = IPool(Constants.POOL_ADDRESSES_PROVIDER.getPool());
+
+        vm.startPrank(user);
+        IERC20(DAI).approve(address(pool), amount + 1);
+
+        pool.supply(DAI, amount, user, 0);
+
+        uint256 userIndex = rewardsProxy.getUserAssetIndex(user, pool.getReserveData(DAI).aTokenAddress, SEAM);
+        assertNotEq(userIndex, 0);
+
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+
+        address[] memory rewards = new address[](1);
+        rewards[0] = SEAM;
+
+        uint88[] memory newEmissionsPerSecond = new uint88[](1);
+        newEmissionsPerSecond[0] = 1;
+
+        address aDAI = pool.getReserveData(DAI).aTokenAddress;
+
+        vm.startPrank(rewardsProxy.EMISSION_MANAGER());
+        rewardsProxy.setEmissionPerSecond(aDAI, rewards, newEmissionsPerSecond);
+        rewardsProxy.setDistributionEnd(aDAI, SEAM, type(uint32).max);
+        vm.stopPrank();
+
+        uint256 userAccruedRewardsBefore = rewardsProxy.getUserAccruedRewards(user, SEAM);
+
+        vm.warp(vm.getBlockTimestamp() + 1 days);
+
+        vm.startPrank(user);
+        pool.supply(DAI, 1, user, 0);
+        vm.stopPrank();
+
+        userIndex = rewardsProxy.getUserAssetIndex(user, aDAI, SEAM);
+        assertNotEq(userIndex, 0);
+
+        uint256 userAccruedRewardsAfter = rewardsProxy.getUserAccruedRewards(user, SEAM);
+        uint256 totalEmittedRewards = newEmissionsPerSecond[0] * 1 days;
+        assertLt(userAccruedRewardsAfter - userAccruedRewardsBefore, totalEmittedRewards);
+    }
+
 
     function test_RewardNotEnded() public {
         uint256 amount = 1000 ether;
