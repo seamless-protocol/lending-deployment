@@ -43,6 +43,7 @@ contract RewardsControllerUpgradeV3BackTest is Test {
 
         rewardsProxy = RewardsController(Constants.POOL_ADDRESSES_PROVIDER.getAddress(REWARDS_PROXY_ADDRESS_ID));
 
+        // etch must be in the setup method. https://github.com/foundry-rs/foundry/issues/8006
         address controllerImplementationV3 = address(new RewardsController(Constants.EMISSION_MANAGER));
         vm.etch(controllerImplementationV2, controllerImplementationV3.code);
     }
