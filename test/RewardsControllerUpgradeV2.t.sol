@@ -13,7 +13,7 @@ import {IPoolAddressesProvider} from "seamless/aave-v3-periphery/misc/interfaces
 import {Constants} from "../script/Constants.sol";
 
 // Test upgrade/migration of RewardsController
-contract RewardsControllerTest is Test {
+contract RewardsControllerUpgradeV2Test is Test {
     uint256 constant FORK_BLOCK_NUMBER = 14894031; // 2024-05-24 Base
 
     bytes32 constant REWARDS_PROXY_ADDRESS_ID = keccak256("INCENTIVES_CONTROLLER");

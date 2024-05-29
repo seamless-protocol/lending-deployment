@@ -63,6 +63,7 @@ contract RewardsControllerUpgradeV2BackTest is Test {
         bytes32 afterBadClaimTx = 0x1e2c8687937673c88f382f7b645e9ff4e424464ed81607ab7a4e72b83e692228; // immdediately after 0x50d408481b6383d56afe01ed1a67c05b94fd9d69231c4720e152e7493a2855bd
         // bytes32 badAccrueTx = 0x97d21eb3cb3935035ecb8672c5f73f69cfd612bd6f6507d6e211db25573bfb64; // bad state accrued tranaction
         bytes32 afterBadAccrueTx = 0xda9c51dcb272d3af3f3704ed1c7a655f9d692fa262171e4aed70e1cc5b64220e; // immediately after bad accrue tx
+        bytes32 recentTx = 0xf547f5e520552750c24c74e084bfb7163e37875c1c260db0224f26b879716911;
 
         vm.rollFork(afterBadClaimTx);
 
@@ -75,9 +76,27 @@ contract RewardsControllerUpgradeV2BackTest is Test {
         assertEq(userAccrued, 0);
 
         vm.rollFork(afterBadAccrueTx);
+    
+        assertEq(rewardsProxy.REVISION(), 2);
 
         userIndex = rewardsProxy.getUserAssetIndex(user, usdcAToken, USDC);
         assertNotEq(userIndex, 0);
+
+        (,uint256 assetIndex) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
+        assertEq(userIndex, assetIndex);
+
+        userAccrued = rewardsProxy.getUserAccruedRewards(user, USDC);
+        assertNotEq(userAccrued, 0);
+
+        vm.rollFork(recentTx);
+
+        assertEq(rewardsProxy.REVISION(), 2);
+
+        userIndex = rewardsProxy.getUserAssetIndex(user, usdcAToken, USDC);
+        assertNotEq(userIndex, 0);
+
+        (,assetIndex) = rewardsProxy.getAssetIndex(usdcAToken, USDC);
+        assertEq(userIndex, assetIndex);
 
         userAccrued = rewardsProxy.getUserAccruedRewards(user, USDC);
         assertNotEq(userAccrued, 0);

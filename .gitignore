@@ -22,4 +22,5 @@ report/
 node_modules/
 
 test/users.json
-test/output.csv
+test/transfers.json
+test/output*

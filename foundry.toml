@@ -7,7 +7,7 @@ solc = "0.8.21"
 optimizer_runs = 100000
 via_ir = false
 
-fs_permissions = [{ access = "read", path = "./test/users.json"}, { access = "read-write", path = "./test/output.csv" }]
+fs_permissions = [{ access = "read", path = "./test/users.json"}, { access = "read", path = "./test/transfers.json"}, { access = "read-write", path = "./test/output.csv" }]
 
 [rpc_endpoints]
 base = "${BASE_RPC}"
