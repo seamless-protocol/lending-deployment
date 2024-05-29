@@ -106,6 +106,5 @@ contract RewardsControllerUpgradeV3BackTest is Test {
 
         userAccrued = rewardsProxy.getUserAccruedRewards(user, USDC);
         assertEq(userAccrued, 0);
-        assertNotEq(userAccrued, 87142498325);
     }
 }

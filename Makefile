@@ -33,4 +33,4 @@ deploy-interest-strategy-tenderly			:; forge script script/DeployInterestRateStr
 deploy-rewards-controller-base-mainnet		:; forge script script/DeployRewardsController.s.sol:DeployRewardsController --force --rpc-url base --chain base --slow --broadcast --verify --delay 5 -vvv
 deploy-rewards-controller-tenderly			:; forge script script/DeployRewardsController.s.sol:DeployRewardsController --force --rpc-url tenderly --etherscan-api-key ${TENDERLY_ACCESS_KEY} --verifier-url ${TENDERLY_VERIFY_URL} --slow --broadcast --verify --delay 5 -vvv
 
-replay-reward-state						:; forge test --match-contract ReplayRewardState --no-storage-caching
+replay-reward-state						:; forge test --match-contract ReplayRewardState

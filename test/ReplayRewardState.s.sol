@@ -33,8 +33,6 @@ contract ReplayRewardState is Test {
     function setUp() public {
         vm.createSelectFork(vm.envString("FORK_URL"), FORK_BLOCK_NUMBER - 1);
 
-        rewardsProxy = RewardsController(Constants.POOL_ADDRESSES_PROVIDER.getAddress(REWARDS_PROXY_ADDRESS_ID));
-
         IUiIncentiveDataProviderV3.AggregatedReserveIncentiveData[] memory incentiveData = Constants
             .UI_INCENTIVE_PROVIDER_V3
             .getReservesIncentivesData(IPoolAddressesProvider(address(Constants.POOL_ADDRESSES_PROVIDER)));
@@ -44,6 +42,8 @@ contract ReplayRewardState is Test {
             assetsList.push(incentiveData[i].vIncentiveData.tokenAddress);
         }
 
+        rewardsProxy = RewardsController(Constants.POOL_ADDRESSES_PROVIDER.getAddress(REWARDS_PROXY_ADDRESS_ID));
+
         // etch must be in the test setup method. https://github.com/foundry-rs/foundry/issues/8006
         address controllerImplementationV3 = address(new RewardsController(Constants.EMISSION_MANAGER));
         vm.etch(controllerImplementationV2, controllerImplementationV3.code);
@@ -51,11 +51,72 @@ contract ReplayRewardState is Test {
 
     function test_run() public {
         bytes32 afterTimerecentTxlockTx = 0x4e5f725376c58b9f710dd2ece16ca10175d8f52d535996455ebce7e7a2d77c51;
+        bytes32 afterBadClaimTx = 0x1e2c8687937673c88f382f7b645e9ff4e424464ed81607ab7a4e72b83e692228;
+        bytes32 afterBadAccrueTx = 0xda9c51dcb272d3af3f3704ed1c7a655f9d692fa262171e4aed70e1cc5b64220e;
         bytes32 recentTx = 0xf547f5e520552750c24c74e084bfb7163e37875c1c260db0224f26b879716911;
         vm.makePersistent(address(controllerImplementationV2));
         vm.makePersistent(address(rewardsProxy));
 
+        address USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+        address usdcAToken = 0x53E240C0F985175dA046A62F26D490d1E259036e;
+        // address user = 0x99e5d4a7Fb7BA7281D1F4fc5DCE311F1d832796C;
+
+        // {
+        //     "rows": [{ "user": "0x13a13869b814be8f13b86e9875ab51bda882e391"}]
+        // }
+        // https://dune.com/queries/3776138/6349617
+        string memory rawJson = vm.readFile("./test/users.json");
+
+        bytes memory userBytes = rawJson.parseRaw("$..user");
+        address[] memory users1 = abi.decode(userBytes, (address[]));
+
+        for (uint256 i = 0; i < users1.length; i++) {
+            rewardsProxy.getUserAssetIndex(users1[i], usdcAToken, USDC);
+        }
+
+        // {
+        //     "rows": {
+        //             "contract_address": "0x13a13869b814be8f13b86e9875ab51bda882e391",
+        //             "to": "0x93ae00e201c0d8b361ebb075d42f306342a04fc5"
+        //         }
+        // }
+        // https://dune.com/queries/3776169/6349652
+        rawJson = vm.readFile(transfersInputFile);
+
+        userBytes = rawJson.parseRaw("$..to");
+        bytes memory assetsBytes = rawJson.parseRaw("$..contract_address");
+        address[] memory users2 = abi.decode(userBytes, (address[]));
+        address[] memory assets = abi.decode(assetsBytes, (address[]));
+
+        assertEq(users2.length, assets.length);
+
+        for (uint256 i = 0; i < users2.length; i++) {
+            rewardsProxy.getUserAssetIndex(users2[i], usdcAToken, USDC);
+        }
+
+        console.log("Json parsed.");
+
+        // rewardsProxy.getUserAssetIndex(user, usdcAToken, USDC);
+
         vm.rollFork(afterTimerecentTxlockTx);
+
+        assertEq(rewardsProxy.REVISION(), 3);
+
+        // uint256 userIndex = rewardsProxy.getUserAssetIndex(user, usdcAToken, USDC);
+        // assertNotEq(userIndex, 0);
+
+        // uint256 userAccrued = rewardsProxy.getUserAccruedRewards(user, USDC);
+        // assertEq(userAccrued, 0);
+
+        // (userAccrued, userIndex) = rewardsProxy.getUserAssetData(user, usdcAToken, USDC);
+        // assertEq(userAccrued, 0);
+        // assertNotEq(userIndex, 0);
+
+        vm.rollFork(afterBadClaimTx);
+
+        // assertEq(rewardsProxy.REVISION(), 3);
+
+        vm.rollFork(afterBadAccrueTx);
 
         assertEq(rewardsProxy.REVISION(), 3);
 
@@ -65,25 +126,13 @@ contract ReplayRewardState is Test {
 
         assertEq(rewardsProxy.REVISION(), 3);
 
+        // (userAccrued, userIndex) = rewardsProxy.getUserAssetData(user, usdcAToken, USDC);
+        // assertEq(userAccrued, 0);
+        // assertEq(userIndex, 7554000000000000000000000);
+        // return;
         if (vm.exists(outputFileName)) {
             vm.removeFile(outputFileName);
         }
-
-        _writeStateFromUsers();
-        _writeStateFromTransfers();
-    }
-
-    function _writeStateFromUsers() internal {
-        // {
-        //     "rows": [{ "user": "0x13a13869b814be8f13b86e9875ab51bda882e391"}]
-        // }
-        // https://dune.com/queries/3776138/6349617
-        string memory rawJson = vm.readFile("./test/users.json");
-
-        bytes memory userBytes = rawJson.parseRaw("$..user");
-        address[] memory users = abi.decode(userBytes, (address[]));
-
-        console.log("Json parsed.");
 
         console.log("Start fetching user state.");
 
@@ -93,9 +142,9 @@ contract ReplayRewardState is Test {
             address[] memory rewards = rewardsProxy.getRewardsByAsset(assetsList[i]);
 
             for (uint256 j = 0; j < rewards.length; j++) {
-                for (uint256 k = 0; k < users.length; k++) {
+                for (uint256 k = 0; k < users1.length; k++) {
                     (uint256 userAccrued, uint256 userIndex) =
-                        rewardsProxy.getUserAssetData(users[k], assetsList[i], rewards[j]);
+                        rewardsProxy.getUserAssetData(users1[k], assetsList[i], rewards[j]);
                     // console.log("asset %s, reward %s, user %s", assetsList[i], rewards[j], users[k]);
                     // console.log("userAccrued %s, userIndex %s", userAccrued, userIndex);
                     vm.writeLine(
@@ -105,7 +154,7 @@ contract ReplayRewardState is Test {
                             ",",
                             Strings.toHexString(rewards[j]),
                             ",",
-                            Strings.toHexString(users[k]),
+                            Strings.toHexString(users1[k]),
                             ",",
                             Strings.toString(userAccrued),
                             ",",
@@ -115,26 +164,8 @@ contract ReplayRewardState is Test {
                 }
             }
         }
-    }
 
-    function _writeStateFromTransfers() internal {
-        // {
-        //     "rows": {
-        //             "contract_address": "0x13a13869b814be8f13b86e9875ab51bda882e391",
-        //             "to": "0x93ae00e201c0d8b361ebb075d42f306342a04fc5"
-        //         }
-        // }
-        // https://dune.com/queries/3776169/6349652
-        string memory rawJson = vm.readFile(transfersInputFile);
-
-        bytes memory userBytes = rawJson.parseRaw("$..to");
-        bytes memory assetsBytes = rawJson.parseRaw("$..contract_address");
-        address[] memory users = abi.decode(userBytes, (address[]));
-        address[] memory assets = abi.decode(assetsBytes, (address[]));
-
-        assertEq(users.length, assets.length);
-
-        console.log("Json parsed.");
+        //------------------------
 
         console.log("Start fetching user state.");
 
@@ -145,7 +176,7 @@ contract ReplayRewardState is Test {
 
             for (uint256 j = 0; j < rewards.length; j++) {
                 (uint256 userAccrued, uint256 userIndex) =
-                    rewardsProxy.getUserAssetData(users[i], assets[i], rewards[j]);
+                    rewardsProxy.getUserAssetData(users2[i], assets[i], rewards[j]);
                 // console.log("asset %s, reward %s, user %s", assets[i], rewards[j], users[k]);
                 // console.log("userAccrued %s, userIndex %s", userAccrued, userIndex);
                 vm.writeLine(
@@ -155,7 +186,7 @@ contract ReplayRewardState is Test {
                         ",",
                         Strings.toHexString(rewards[j]),
                         ",",
-                        Strings.toHexString(users[i]),
+                        Strings.toHexString(users2[i]),
                         ",",
                         Strings.toString(userAccrued),
                         ",",
