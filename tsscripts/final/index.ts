@@ -1,11 +1,11 @@
-import { ethers } from "ethers";
+import { Network, ethers } from "ethers";
 import * as fs from "fs";
 
-const BASE_RPC_URL = "";
+const BASE_RPC_URL = "http://127.0.0.1:8545";
 
 async function makeIndexMap() {
   const assetPairIndexesFile = fs.readFileSync(
-    "tsscripts/asset-indexes/assetPairIndexes.json"
+    "asset-indexes/assetPairIndexes.json"
   );
   const assetPairIndexes = JSON.parse(assetPairIndexesFile.toString());
 
@@ -25,15 +25,14 @@ async function makeIndexMap() {
 async function main() {
   const indexesMap = await makeIndexMap();
 
-  const userAssetRewardFile = fs.readFileSync(
-    "tsscripts/final/userAssetReward.json"
-  );
-  const userAssetReward = JSON.parse(userAssetRewardFile.toString());
+  const userAssetRewardFile = fs.readFileSync("final/userAssetReward.json");
+  const userAssetReward = JSON.parse(userAssetRewardFile.toString()).result
+    .rows;
 
-  const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+  const provider = new ethers.JsonRpcProvider();
   const rewardControllerAbi = [
     "function getAssetIndex(address, address) external view returns (uint256, uint256)",
-    "function getUserRewards(address[],address,address) external view returns (uint256)",
+    "function getUserRewards(address,address,address) external view returns (uint256)",
   ];
   const rewardControllerAddress = "0x91Ac2FfF8CBeF5859eAA6DdA661feBd533cD3780";
   const rewardController = new ethers.Contract(
@@ -57,12 +56,15 @@ async function main() {
 
         const currentAccruedRewards = BigInt(
           await rewardController.getUserRewards(
-            [elem.asset],
             elem.user,
+            elem.asset,
             elem.reward
           )
         );
-        const accruedToDeduct = BigInt(elem.accruedRewards);
+
+        const accruedToDeduct = elem.rewardsAccrued
+          ? BigInt(elem.rewardsAccrued)
+          : BigInt(0);
 
         const accruedToSet =
           currentAccruedRewards > accruedToDeduct
@@ -78,14 +80,21 @@ async function main() {
           currentAccrued: currentAccruedRewards.toString(),
           accruedToDeduct: accruedToDeduct.toString(),
         });
+
+        console.log("user", elem.user);
+        console.log("asset", elem.asset);
+        console.log("reward", elem.reward);
+        console.log("indexToSet", indexToSet);
+        console.log("accruedToSet", accruedToSet.toString());
+        console.log("currentAccrued", currentAccruedRewards.toString());
+        console.log("accruedToDeduct", accruedToDeduct.toString());
+
+        console.log("=============================================");
       })
     );
   }
 
-  fs.writeFileSync(
-    "tsscripts/final/changes.json",
-    JSON.stringify(changes, null, 2)
-  );
+  fs.writeFileSync("final/changes.json", JSON.stringify(changes, null, 2));
 }
 
 main().catch((err) => {
