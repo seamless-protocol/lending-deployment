@@ -24,3 +24,5 @@ node_modules/
 test/users.json
 test/transfers.json
 test/output*
+
+queryResults/

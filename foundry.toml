@@ -7,7 +7,20 @@ solc = "0.8.21"
 optimizer_runs = 100000
 via_ir = false
 
-fs_permissions = [{ access = "read", path = "./test/users.json"}, { access = "read", path = "./test/transfers.json"}, { access = "read-write", path = "./test/output.csv" }]
+fs_permissions = [{ access = "read", path = "./test/users.json"}, { access = "read", path = "./test/transfers.json"}, { access = "read-write", path = "./test/output.csv" },
+ { access = "read", path = "./queryResults/handleAction_until_15442183_1.json" },
+ { access = "read", path = "./queryResults/handleAction_until_15442183_2.json" },
+ { access = "read", path = "./queryResults/handleAction_until_15442183_3.json" },
+  { access = "read", path = "./queryResults/handleAction_until_15442183_1_s.json" },
+ { access = "read", path = "./queryResults/handleAction_until_15442183_2_s.json" },
+ { access = "read", path = "./queryResults/handleAction_until_15442183_3_s.json" },
+ { access = "read", path = "./queryResults/claimRewards_until_15442183.json" },
+ { access = "read", path = "./queryResults/claimAllRewards_until_15442183.json" },
+{ access = "read", path = "./queryResults/distinctUsers.json" },
+ { access = "read-write", path = "./test/out/userDataOut.csv" },
+ { access = "read-write", path = "./test/out/userDataOut_current.csv" },
+ { access = "read-write", path = "./test/out/test.txt" }
+ ]
 
 [rpc_endpoints]
 base = "${BASE_RPC}"

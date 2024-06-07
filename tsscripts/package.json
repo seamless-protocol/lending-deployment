@@ -1,0 +1,21 @@
+{
+  "name": "tsscripts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "aes-js": "^4.0.0-beta.5",
+    "undici-types": "^5.26.5",
+    "ethers": "^6.12.1",
+    "minimist": "^1.2.8",
+    "ws": "^8.5.0",
+    "tslib": "^2.4.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
