@@ -2,7 +2,8 @@ import { ethers } from "ethers";
 import * as fs from "fs";
 import { buggedAssetPairs } from "./buggedAssetPairs";
 
-const BASE_RPC_URL = "";
+const BASE_RPC_URL =
+  "https://base-mainnet.g.alchemy.com/v2/wiXuGY3sLQTGTJUKJ1YPxnIT7zEGu4Uq";
 
 async function main() {
   const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
