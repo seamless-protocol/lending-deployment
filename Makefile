@@ -34,3 +34,9 @@ deploy-rewards-controller-base-mainnet		:; forge script script/DeployRewardsCont
 deploy-rewards-controller-tenderly			:; forge script script/DeployRewardsController.s.sol:DeployRewardsController --force --rpc-url tenderly --etherscan-api-key ${TENDERLY_ACCESS_KEY} --verifier-url ${TENDERLY_VERIFY_URL} --slow --broadcast --verify --delay 5 -vvv
 
 replay-reward-state						:; forge test --match-contract ReplayRewardState
+
+startAnvil :; anvil --fork-url "wss://base-mainnet.g.alchemy.com/v2/Sx7otGaSe8SUjRwxUlGPJWqHmp0BuCnK" --fork-block-number 15505539
+anvilSetup :; cast rpc anvil_autoImpersonateAccount true --rpc-url http://127.0.0.1:8545 && cast rpc anvil_setBalance 0x639d2dD24304aC2e6A691d8c1cFf4a2665925fee 1000000000000000000 --rpc-url http://127.0.0.1:8545
+upgradeAnvilRewardController :; forge script script/UpgradeRewardController.s.sol:UpgradeRewardController --unlocked --rpc-url http://127.0.0.1:8545 --broadcast -vvv --sender 0x639d2dD24304aC2e6A691d8c1cFf4a2665925fee
+getDuneData :; curl -H "X-Dune-API-Key:lL8RcBkGR2tLdXje40zvFC8YpuSq9kH0" "https://api.dune.com/api/v1/query/3801423/results?limit=20000" > ./tsscripts/final/userAssetReward.json
+runJsFinal :; ts-node ./tsscripts/final/index.ts

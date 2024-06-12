@@ -29,7 +29,7 @@ async function main() {
   const userAssetReward = JSON.parse(userAssetRewardFile.toString()).result
     .rows;
 
-  const provider = new ethers.JsonRpcProvider();
+  const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
   const rewardControllerAbi = [
     "function getAssetIndex(address, address) external view returns (uint256, uint256)",
     "function getUserRewards(address,address,address) external view returns (uint256)",

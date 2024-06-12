@@ -1,5 +1,5 @@
 import { BigNumberish, BytesLike, ethers } from "ethers";
-import { abi as RewardsControllerABI } from "../../out/RewardsController.sol/RewardsController.json"
+import RewardsControllerABI from "./abi.json"
 import SafeApiKit from '@safe-global/api-kit'
 import Safe from '@safe-global/protocol-kit'
 import {
@@ -7,7 +7,6 @@ import {
   OperationType
 } from '@safe-global/safe-core-sdk-types'
 import * as fs from 'fs';
-import * as csvParser from 'csv-parser';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -41,11 +40,11 @@ interface BatchedData {
 }
 
 const REWARDS_CONTROLLER_PROXY: string = '0x91Ac2FfF8CBeF5859eAA6DdA661feBd533cD3780';
-const CHAIN_ID: bigint = BigInt(0);
-const BASE_RPC_URL = "";
-const DELEGATE_ADDRESS = "";
-const DELEGATE_PK = "";
-const SAFE_WALLET = "";
+const CHAIN_ID: bigint = BigInt(8453);
+const BASE_RPC_URL = config.BASE_RPC_URL!;
+const DELEGATE_ADDRESS = config.DELEGATE_ADDRESS!;
+const DELEGATE_PK = config.DELEGATE_PK;
+const SAFE_WALLET = config.SAFE_WALLET!;
 
 async function encodeSetUserData(
     assets: string[], 
@@ -109,7 +108,7 @@ async function createSafeTxs2(filePath: string, batchSize: number): Promise<void
     
         const convertedData = convertEntriesToArrays(jsonData);
     
-        const batchSize = 2;
+        const batchSize = 500;
     
         batchedData = {
             userBatches: batchArray(convertedData.users, batchSize),
@@ -145,37 +144,37 @@ async function createSafeTxs2(filePath: string, batchSize: number): Promise<void
                 batchedData.assetBatches[i],
                 batchedData.rewardBatches[i],
                 batchedData.userBatches[i],
-                batchedData.indexToSetBatches[i].map(index => ethers.BigNumber.from(index)),
-                batchedData.accruedToSetBatches[i].map(accrued => ethers.BigNumber.from(accrued))
+                batchedData.indexToSetBatches[i],
+                batchedData.accruedToSetBatches[i]
             );
 
             console.log(`Encoded data for batch ${i + 1}: ${encodedSetUserData}`);
 
-            const safeTransactionData: MetaTransactionData = {
-                to: REWARDS_CONTROLLER_PROXY,
-                value: '0', 
-                data: encodedSetUserData,
-                operation: OperationType.Call
-              }
+            // const safeTransactionData: MetaTransactionData = {
+            //     to: REWARDS_CONTROLLER_PROXY,
+            //     value: '0', 
+            //     data: encodedSetUserData,
+            //     operation: OperationType.Call
+            //   }
 
-              console.log(`Safe tx data for batch ${i + 1}: ${safeTransactionData}`)
+            //   console.log(`Safe tx data for batch ${i + 1}: ${safeTransactionData}`)
               
-              // single tx
-              const safeTransaction = await protocolKitDelegate.createTransaction({
-                transactions: [safeTransactionData]
-              });
+            //   // single tx
+            //   const safeTransaction = await protocolKitDelegate.createTransaction({
+            //     transactions: [safeTransactionData]
+            //   });
               
-              const safeTxHash = await protocolKitDelegate.getTransactionHash(safeTransaction)
-              const signature = await protocolKitDelegate.signHash(safeTxHash)
+            //   const safeTxHash = await protocolKitDelegate.getTransactionHash(safeTransaction)
+            //   const signature = await protocolKitDelegate.signHash(safeTxHash)
               
-              // Propose transaction to the service
-              await apiKit.proposeTransaction({
-                safeAddress: SAFE_WALLET,
-                safeTransactionData: safeTransaction.data,
-                safeTxHash,
-                senderAddress: DELEGATE_ADDRESS,
-                senderSignature: signature.data
-              });
+            //   // Propose transaction to the service
+            //   await apiKit.proposeTransaction({
+            //     safeAddress: SAFE_WALLET,
+            //     safeTransactionData: safeTransaction.data,
+            //     safeTxHash,
+            //     senderAddress: DELEGATE_ADDRESS,
+            //     senderSignature: signature.data
+            //   });
         }
     } catch (err) {
         console.error('Error occurred whilst proposing transaction to Safe{Wallet}.');
