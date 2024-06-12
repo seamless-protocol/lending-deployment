@@ -10,3 +10,4 @@ ds-test/=lib/seamless-aave-helpers/lib/forge-std/lib/ds-test/src/
 governance-crosschain-bridges/=lib/seamless-aave-helpers/lib/governance-crosschain-bridges/
 seamless/aave-helpers/=lib/seamless-aave-helpers/src/
 solidity-utils/=lib/seamless-aave-helpers/lib/solidity-utils/src
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
