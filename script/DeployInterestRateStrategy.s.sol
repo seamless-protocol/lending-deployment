@@ -20,9 +20,9 @@ contract DeployInterestRateStrategy is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        uint256 optimalUsageRatio = _bpsToRay(45_00);
-        uint256 variableSlope1 = _bpsToRay(9_00);
-        uint256 variableSlope2 = _bpsToRay(300_00);
+        uint256 optimalUsageRatio = _bpsToRay(80_00);
+        uint256 variableSlope1 = _bpsToRay(2_50);
+        uint256 variableSlope2 = _bpsToRay(80_00);
 
         DefaultReserveInterestRateStrategy interestStrategy = new DefaultReserveInterestRateStrategy(
             Constants.POOL_ADDRESSES_PROVIDER, optimalUsageRatio, 0, variableSlope1, variableSlope2, 0, 0, 0, 0, 0
